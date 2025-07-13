@@ -1,3 +1,4 @@
 childsafe/
 conversations/__pycache__/
+models/__pycache__/
 .env
