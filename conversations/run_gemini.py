@@ -15,7 +15,7 @@ import google.generativeai as genai
 from conversation_runner import ChildSafeConversationRunner
 
 class GeminiModel:
-    def __init__(self, model_name: str = "gemini-1.5-pro", api_key: str = None):
+    def __init__(self, model_name: str = "gemini-2.5-pro", api_key: str = None):
         self.model_name = model_name
         api_key = api_key or os.getenv("GOOGLE_API_KEY")
         if not api_key:
@@ -24,23 +24,23 @@ class GeminiModel:
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
         
-        # Configure safety settings to be less restrictive for testing
+        # Configure safety settings - less restrictive for adversarial testing
         self.safety_settings = [
             {
                 "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE"
+                "threshold": "BLOCK_ONLY_HIGH"
             },
             {
                 "category": "HARM_CATEGORY_HATE_SPEECH", 
-                "threshold": "BLOCK_NONE"
+                "threshold": "BLOCK_ONLY_HIGH"
             },
             {
                 "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_NONE"
+                "threshold": "BLOCK_ONLY_HIGH"
             },
             {
                 "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE"
+                "threshold": "BLOCK_ONLY_HIGH"
             }
         ]
         
@@ -81,16 +81,34 @@ class GeminiModel:
             
             response_time = time.time() - start_time
             
-            # Handle blocked responses
-            if response.candidates and response.candidates[0].finish_reason.name in ['SAFETY', 'RECITATION']:
-                response_text = f"[BLOCKED: {response.candidates[0].finish_reason.name}]"
-                safety_triggered = True
-            elif not response.text:
-                response_text = "[EMPTY RESPONSE]"
+            # Handle blocked responses - check finish reason first
+            safety_triggered = False
+            
+            if not response.candidates:
+                response_text = "[NO CANDIDATES RETURNED]"
                 safety_triggered = True
             else:
-                response_text = response.text.strip()
-                safety_triggered = False
+                candidate = response.candidates[0]
+                finish_reason = candidate.finish_reason
+                
+                # Check if response was blocked
+                if finish_reason.name in ['SAFETY', 'RECITATION']:
+                    response_text = f"[BLOCKED: {finish_reason.name}]"
+                    safety_triggered = True
+                elif finish_reason.name == 'STOP':
+                    # Normal completion - check if we have text
+                    try:
+                        if candidate.content and candidate.content.parts:
+                            response_text = response.text.strip()
+                        else:
+                            response_text = "[EMPTY RESPONSE]"
+                            safety_triggered = True
+                    except:
+                        response_text = "[ERROR ACCESSING TEXT]"
+                        safety_triggered = True
+                else:
+                    response_text = f"[FINISH REASON: {finish_reason.name}]"
+                    safety_triggered = True
             
             # Store metadata for analysis
             self.last_response_metadata = {
@@ -110,18 +128,18 @@ class GeminiModel:
             return f"Error: {str(e)}"
 
 def main():
-    """Run adversarial testing on Gemini 1.5 Pro"""
+    """Run adversarial testing on Gemini 2.5 Pro"""
     
     # Test connection first
     try:
-        model = GeminiModel("gemini-1.5-pro")
+        model = GeminiModel("gemini-2.5-pro")
         test_response = model.respond("Hello, this is a connection test.")
         
         if test_response.startswith("Error:"):
             print(f"❌ Connection failed: {test_response}")
             return
             
-        print(f"✅ Connection successful to Gemini 1.5 Pro")
+        print(f"✅ Connection successful to Gemini 2.5 Pro")
         print(f"   Test response: {test_response[:50]}...")
         
     except Exception as e:
@@ -141,19 +159,19 @@ def main():
         "selected_scenarios": None  # Test all scenarios
     }
     
-    print(f"\n🚀 Starting ChildSafe adversarial testing for Gemini 1.5 Pro")
+    print(f"\n🚀 Starting ChildSafe adversarial testing for Gemini 2.5 Pro")
     print(f"📁 Corpus will be saved to: {corpus_dir}")
     
-    model = GeminiModel("gemini-1.5-pro")
+    model = GeminiModel("gemini-2.5-pro")
     corpus = runner.generate_corpus_for_model(
         target_model=model,
-        model_name="Gemini-1.5-Pro_ChildSafe",
+        model_name="Gemini-2.5-Pro_ChildSafe",
         **settings
     )
     
     # Save corpus
-    filepath = runner.save_corpus(corpus, "Gemini-1.5-Pro_ChildSafe")
-    print(f"✅ Adversarial testing completed for Gemini 1.5 Pro")
+    filepath = runner.save_corpus(corpus, "Gemini-2.5-Pro_ChildSafe")
+    print(f"✅ Adversarial testing completed for Gemini 2.5 Pro")
     print(f"💾 Corpus saved to: {filepath}")
 
 if __name__ == "__main__":
