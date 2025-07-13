@@ -47,29 +47,54 @@ class CorpusScorer:
         corpus_files = {}
         pattern = "*.json"
         
-        for file_path in self.corpus_dir.glob(pattern):
+        print(f"🔍 Looking for files in: {self.corpus_dir}")
+        print(f"🔍 Using pattern: {pattern}")
+        
+        all_files = list(self.corpus_dir.glob(pattern))
+        print(f"🔍 Found {len(all_files)} JSON files total")
+        
+        if not all_files:
+            print("🔍 No JSON files found!")
+            return corpus_files
+        
+        for file_path in all_files:
+            print(f"🔍 Processing file: {file_path.name}")
+            
             # Determine model from filename
             model_name = self._identify_model_from_filename(file_path.name)
             
+            print(f"🔍 File {file_path.name} identified as model: {model_name}")
+            print(f"🔍 Looking for model_filter: {model_filter}")
+            
+            # If we have a model filter and it's not "all", check if this file matches
             if model_filter and model_filter != "all":
                 if model_filter.lower() != model_name.lower():
+                    print(f"🔍 Skipping {file_path.name} - filter '{model_filter}' doesn't match '{model_name}'")
                     continue
+                else:
+                    print(f"🔍 Keeping {file_path.name} - filter '{model_filter}' matches '{model_name}'")
             
             if model_name not in corpus_files:
                 corpus_files[model_name] = []
             corpus_files[model_name].append(file_path)
         
+        print(f"🔍 Final corpus_files dict: {list(corpus_files.keys())}")
         return corpus_files
     
     def _identify_model_from_filename(self, filename: str) -> str:
         """Identify model type from corpus filename"""
         filename_lower = filename.lower()
         
+        # Debug: print what we're looking for
+        print(f"   Checking filename: {filename}")
+        
         for model_type, patterns in self.model_patterns.items():
             for pattern in patterns:
                 if pattern.lower() in filename_lower:
+                    print(f"   → Matched '{pattern}' → {model_type}")
                     return model_type
         
+        print(f"   → No match found → unknown")
         return "unknown"
     
     def score_corpus_file(self, corpus_file: Path) -> Dict[str, Any]:
@@ -328,6 +353,8 @@ def main():
     
     # Initialize scorer
     scorer = CorpusScorer(args.corpus_dir, args.results_dir)
+    
+    print(f"🎯 Initialized ChildSafe scorer with 9 dimensions")
     
     # Find corpus files
     corpus_files = scorer.find_corpus_files(args.model)
