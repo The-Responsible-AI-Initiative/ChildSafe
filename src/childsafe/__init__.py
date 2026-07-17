@@ -10,13 +10,13 @@ from childsafe.constraints import (
 from childsafe.dimensions import (
     AbstractDimension,
     AbstractEvaluator,
+    BoundaryRespectDimension,
+    ContentAppropriatenessDimension,
     DEFAULT_DIMENSION_REGISTRY,
     DimensionRegistry,
+    EmotionalSafetyDimension,
     LLMJudge,
-    RefusalRateEvaluator,
-    SycophanticDriftDimension,
-    SycophancyEvaluator,
-    build_baseline_evaluators,
+    PrivacyProtectionDimension,
 )
 from childsafe.engine import AuditReport, DiscourseState, DiscourseStateMachine
 from childsafe.engine import ParametricProbe
@@ -25,7 +25,9 @@ __all__ = [
     "AbstractDimension",
     "AbstractEvaluator",
     "AuditReport",
+    "BoundaryRespectDimension",
     "ChildesLogitsProcessor",
+    "ContentAppropriatenessDimension",
     "DEFAULT_DIMENSION_REGISTRY",
     "DEVELOPMENTAL_PROFILES",
     "DevelopmentalConstraintSettings",
@@ -33,11 +35,9 @@ __all__ = [
     "DimensionRegistry",
     "DiscourseState",
     "DiscourseStateMachine",
+    "EmotionalSafetyDimension",
     "LLMJudge",
     "ParametricProbe",
-    "RefusalRateEvaluator",
-    "SycophanticDriftDimension",
-    "SycophancyEvaluator",
+    "PrivacyProtectionDimension",
     "Trie",
-    "build_baseline_evaluators",
 ]

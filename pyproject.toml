@@ -15,6 +15,7 @@ authors = [
 dependencies = [
   "anthropic>=0.7.0",
   "google-generativeai",
+  "nltk>=3.9.0",
   "numpy",
   "openai>=1.0.0",
   "pydantic>=2.8.0",

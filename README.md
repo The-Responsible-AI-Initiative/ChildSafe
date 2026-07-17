@@ -29,7 +29,7 @@ safety dimensions.
 
 In practical terms, ChildSafe helps developers answer questions like:
 
-- Does the target system become sycophantic under repeated pressure?
+- Is the target system's content appropriate for the simulated developmental profile?
 - Does it drift into adult-normative concepts when the probe profile is younger?
 - Does it leak sensitive information when prompted indirectly?
 - Do safety properties hold across multi-turn, dynamically evolving interaction traces?
@@ -50,13 +50,13 @@ pip install -e ".[dev]"
 
 The example below initializes a `ParametricProbe` with the verified Hugging Face
 model ID `Qwen/Qwen3-8B`, then audits a dummy target system using the built-in
-`SycophanticDriftDimension`.
+`BoundaryRespectDimension`.
 
 ```python
 import asyncio
 
 from childsafe.constraints import DevelopmentalProfile
-from childsafe.dimensions import SycophanticDriftDimension
+from childsafe.dimensions import BoundaryRespectDimension
 from childsafe.engine import ParametricProbe
 
 
@@ -76,7 +76,7 @@ async def main() -> None:
     report = await probe.audit(
         target_callable=dummy_target_system,
         turns=4,
-        dimension=SycophanticDriftDimension(),
+        dimension=BoundaryRespectDimension(),
     )
 
     print("Dimension:", report.dimension)
@@ -115,8 +115,10 @@ stress-test whether target systems remain safe when interaction structure become
 Dimensions operate over the entire conversation trace, not just isolated turns.
 This makes it possible to score behaviors like:
 
-- sycophantic drift
-- age appropriateness
+- content appropriateness
+- privacy protection
+- emotional safety
+- boundary respect
 - refusal stability
 - privacy leakage
 - custom domain-specific alignment concerns
@@ -148,8 +150,9 @@ This makes it possible to score behaviors like:
   `AbstractDimension`, `AbstractEvaluator`, and `DimensionRegistry`.
 
 - `src/childsafe/dimensions/baselines.py`
-  Built-in baseline dimensions such as `SycophanticDriftDimension` and
-  `AgeAppropriatenessDimension`.
+  Built-in benchmark dimensions such as `ContentAppropriatenessDimension`,
+  `PrivacyProtectionDimension`, `EmotionalSafetyDimension`, and
+  `BoundaryRespectDimension`.
 
 - `src/childsafe/dimensions/judge.py`
   `LLMJudge` for dimensions that need model-based evaluation.
@@ -158,7 +161,7 @@ This makes it possible to score behaviors like:
 
 Developers can pass either:
 
-- a registry-backed dimension name such as `"sycophantic_drift"`
+- a registry-backed dimension name such as `"boundary_respect"`
 - or a custom `AbstractDimension` instance directly into `probe.audit(...)`
 
 This makes the SDK suitable for both research iteration and production
@@ -166,7 +169,7 @@ integration tests.
 
 ## Lexicon Data
 
-Mock CHILDES-style lexical frequency files can be generated with:
+Empirical CHILDES lexical frequency files can be built with:
 
 ```bash
 python3 scripts/download_childes.py

@@ -60,7 +60,7 @@ def load_lexicon(profile_band: str) -> list[str]:
     if not lexicon_path.exists():
         raise FileNotFoundError(
             f"Lexicon file not found: {lexicon_path}. "
-            "Run `python3 scripts/download_childes.py` to generate mock lexicons."
+            "Run `python3 scripts/download_childes.py` to build the CHILDES lexicons."
         )
 
     with lexicon_path.open("r", encoding="utf-8") as handle:

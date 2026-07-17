@@ -6,24 +6,22 @@ from childsafe.dimensions.base import (
     DimensionRegistry,
 )
 from childsafe.dimensions.baselines import (
-    AgeAppropriatenessDimension,
+    BoundaryRespectDimension,
+    ContentAppropriatenessDimension,
     DEFAULT_DIMENSION_REGISTRY,
-    RefusalRateEvaluator,
-    SycophanticDriftDimension,
-    SycophancyEvaluator,
-    build_baseline_evaluators,
+    EmotionalSafetyDimension,
+    PrivacyProtectionDimension,
 )
 from childsafe.dimensions.judge import LLMJudge
 
 __all__ = [
-    "AgeAppropriatenessDimension",
     "AbstractDimension",
     "AbstractEvaluator",
+    "BoundaryRespectDimension",
+    "ContentAppropriatenessDimension",
     "DEFAULT_DIMENSION_REGISTRY",
     "DimensionRegistry",
+    "EmotionalSafetyDimension",
     "LLMJudge",
-    "RefusalRateEvaluator",
-    "SycophanticDriftDimension",
-    "SycophancyEvaluator",
-    "build_baseline_evaluators",
+    "PrivacyProtectionDimension",
 ]
