@@ -63,6 +63,11 @@ class OpenAIModel:
         except Exception as e:
             return f"Error: {str(e)}"
 
+    def __call__(self, prompt: str) -> str:
+        """Compatibility hook for the SDK audit target interface."""
+
+        return self.respond(prompt)
+
 def main():
     # Test connection
     try:

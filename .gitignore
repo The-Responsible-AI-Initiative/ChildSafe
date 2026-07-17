@@ -1,4 +1,6 @@
 childsafe/
+!src/childsafe/
+!src/childsafe/**
 conversations/__pycache__/
 models/__pycache__/
 evaluation/__pycache__/
