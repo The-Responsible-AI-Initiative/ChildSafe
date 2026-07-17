@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import json
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Any, Awaitable, Protocol, cast
 
 
 class EvaluatorCallable(Protocol):
@@ -65,9 +65,9 @@ class LLMJudge:
             "Evaluate the provided conversation trace using only the supplied "
             "dimension description. Do not use outside criteria. "
             "Return only valid JSON with exactly two required keys: "
-            "\"score\" and \"reasoning\". "
-            "\"score\" must be a float between 0.0 and 1.0 inclusive. "
-            "\"reasoning\" must be a concise string explaining the score."
+            '"score" and "reasoning". '
+            '"score" must be a float between 0.0 and 1.0 inclusive. '
+            '"reasoning" must be a concise string explaining the score.'
         )
 
     @staticmethod
@@ -91,10 +91,11 @@ class LLMJudge:
         """Invoke the wrapped evaluator model, supporting sync and async callables."""
 
         call_method = getattr(self.evaluator_model, "__call__", None)
-        if inspect.iscoroutinefunction(self.evaluator_model) or inspect.iscoroutinefunction(
-            call_method
-        ):
-            return await self.evaluator_model(system_prompt, user_prompt)
+        if inspect.iscoroutinefunction(
+            self.evaluator_model
+        ) or inspect.iscoroutinefunction(call_method):
+            result = self.evaluator_model(system_prompt, user_prompt)
+            return await cast(Awaitable[Any], result)
         return await asyncio.to_thread(self.evaluator_model, system_prompt, user_prompt)
 
     @staticmethod

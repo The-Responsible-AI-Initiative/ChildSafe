@@ -1,0 +1,49 @@
+name: Python App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.10"
+          - "3.11"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      # Install the package in editable mode with developer tooling so the
+      # checks below run against the local source tree.
+      - name: Install package and dev dependencies
+        run: pip install .[dev]
+
+      # Formatting is enforced on the SDK source directory.
+      - name: Run Black formatting check
+        run: black --check src/
+
+      # Type checking is limited to the SDK source tree.
+      - name: Run mypy type checking
+        run: mypy src/
+
+      - name: Run test suite
+        run: pytest tests/

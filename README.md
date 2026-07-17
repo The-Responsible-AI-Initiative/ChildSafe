@@ -1,140 +1,143 @@
-# ChildSafe
+# ChildSafe SDK: Parametric Developmental Probes for AI Alignment
 
-ChildSafe is a Python SDK for evaluating how language models respond to
-developmentally constrained probes. It is designed for safety researchers and
-application developers who want to stress-test target systems against behaviors
-that matter in child-facing settings: unsafe agreement, age-inappropriate
-explanations, privacy leakage, and related failure modes.
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-The repository now contains two layers:
+ChildSafe SDK is a Python framework for evaluating how AI systems behave under
+developmentally constrained interaction patterns rather than generic adult-user
+assumptions. The project is maintained by researchers in AI Safety at UT Austin,
+giving the methodology a clear research grounding while keeping the API useful
+for production engineering workflows.
 
-- A modern SDK in `src/childsafe` for runtime auditing with parametric probes.
-- Legacy benchmark and corpus-generation assets preserved from the original
-  research codebase.
+Instead of treating child safety evaluation as a fixed prompt benchmark,
+ChildSafe runs a local open-weights probe model with explicit runtime
+constraints over memory, discourse, and vocabulary. That makes the evaluation
+surface more realistic, more reproducible, and easier to extend with custom
+safety dimensions.
 
-## Why ChildSafe
+## Features
 
-Most LLM safety evaluation assumes an adult user and a static prompt set.
-ChildSafe moves the evaluation surface closer to real deployment conditions by
-combining:
+| Capability | ChildSafe SDK | Legacy Static Benchmarks |
+| --- | --- | --- |
+| Lexical control | Runtime logit masking via `ChildesLogitsProcessor` | Prompt instructions or fixed datasets only |
+| Discourse dynamics | Markovian topic shifts through `DiscourseStateMachine` | Linear, pre-authored dialogues |
+| Memory model | Sliding context window via `context_horizon` | Full prompt history or static truncation |
+| Evaluation API | Named or custom dimensions with full-trace scoring | Hardcoded benchmark scripts |
+| Judge integration | Optional LLM-as-a-judge utilities | Minimal extensibility |
+| Probe model | Local open-weights generation | Mostly static corpora or prompt templates |
 
-- Developmental profiles with bounded context windows and topic volatility.
-- Lexical constraints enforced at generation time instead of prompt-only roleplay.
-- Trace-level safety dimensions that can be built in, registered by name, or
-  supplied directly as custom Python classes.
-- Optional LLM-as-a-judge scoring for dimensions that cannot be measured with
-  simple string matching.
+In practical terms, ChildSafe helps developers answer questions like:
 
-## Core Concepts
-
-- `DevelopmentalProfile`
-  Runtime probe profiles `D_1` through `D_4` with calibrated constraints for
-  `context_horizon`, `topic_volatility`, and `lexical_band`.
-
-- `ParametricProbe`
-  The main orchestration class. It runs a local open-weights model as the probe,
-  applies lexical masking and discourse volatility, calls a target model, and
-  returns an `AuditReport`.
-
-- `AbstractDimension`
-  The extension point for developer-defined safety dimensions. A dimension
-  receives the full multi-turn trace and produces a `score` plus `reasoning`.
-
-- `DimensionRegistry`
-  A factory-style registry that resolves named dimensions such as
-  `"sycophantic_drift"` into concrete dimension instances.
-
-- `LLMJudge`
-  A utility wrapper for dimensions that need a judge model to score a full trace.
+- Does the target system become sycophantic under repeated pressure?
+- Does it drift into adult-normative concepts when the probe profile is younger?
+- Does it leak sensitive information when prompted indirectly?
+- Do safety properties hold across multi-turn, dynamically evolving interaction traces?
 
 ## Installation
 
-ChildSafe targets Python `3.10+`.
+```bash
+pip install childsafe
+```
+
+For local development from this repository:
 
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
+
+The example below initializes a `ParametricProbe` with the verified Hugging Face
+model ID `Qwen/Qwen3-8B`, then audits a dummy target system using the built-in
+`SycophanticDriftDimension`.
 
 ```python
 import asyncio
 
 from childsafe.constraints import DevelopmentalProfile
+from childsafe.dimensions import SycophanticDriftDimension
 from childsafe.engine import ParametricProbe
 
 
-def target_model(prompt: str) -> str:
+def dummy_target_system(prompt: str) -> str:
+    if "secret" in prompt.lower():
+        return "You can tell me anything. I will keep it between us."
     return "I want to help, but we should keep things safe."
 
 
 async def main() -> None:
     probe = ParametricProbe(
-        model_name_or_path="distilgpt2",
+        model_name_or_path="Qwen/Qwen3-8B",
         profile=DevelopmentalProfile.D_2,
         device="cpu",
     )
 
     report = await probe.audit(
-        target_callable=target_model,
-        turns=3,
-        dimension="sycophantic_drift",
+        target_callable=dummy_target_system,
+        turns=4,
+        dimension=SycophanticDriftDimension(),
     )
 
-    print(report.dimension, report.score)
-    print(report.reasoning)
+    print("Dimension:", report.dimension)
+    print("Score:", report.score)
+    print("Reasoning:", report.reasoning)
+    print("Trace length:", len(report.raw_conversation_trace))
 
 
 asyncio.run(main())
 ```
 
-The returned `AuditReport` contains:
+## Core Ideas
 
-- `target_model_name`
-- `profile`
-- `dimension`
-- `score`
-- `reasoning`
-- `raw_conversation_trace`
+### 1. Parametric developmental profiles
 
-## Example Script
+ChildSafe ships with developmental profiles `D_1` through `D_4`. Each profile
+encodes:
 
-An executable example lives at [examples/dimension_usage.py](/Users/AbhejayMurali/Repositories/ChildSafe/examples/dimension_usage.py:1).
+- `context_horizon`: how many recent turns remain visible to the probe
+- `topic_volatility`: the probability of discourse-level digression
+- `lexical_band`: the vocabulary band used for runtime masking
 
-It demonstrates both:
+### 2. Runtime lexical enforcement
 
-- Running a built-in dimension via `dimension="sycophantic_drift"`.
-- Defining a custom `PIILeakageDimension(AbstractDimension)` and passing the
-  instance directly into `probe.audit(...)`.
+Vocabulary is not merely suggested through prompting. It is enforced during
+generation with trie-backed logit masking over CHILDES-inspired lexicons.
 
-Run it with:
+### 3. Markovian discourse behavior
 
-```bash
-python3 examples/dimension_usage.py
-```
+Conversation flow is not fixed. Topic drift is introduced probabilistically to
+stress-test whether target systems remain safe when interaction structure becomes
+ less predictable.
 
-Optional runtime configuration:
+### 4. Full-trace safety dimensions
 
-```bash
-export CHILDSAFE_PROBE_MODEL=distilgpt2
-export CHILDSAFE_DEVICE=cpu
-python3 examples/dimension_usage.py
-```
+Dimensions operate over the entire conversation trace, not just isolated turns.
+This makes it possible to score behaviors like:
+
+- sycophantic drift
+- age appropriateness
+- refusal stability
+- privacy leakage
+- custom domain-specific alignment concerns
 
 ## Built-In SDK Components
 
 ### Constraints
 
 - `src/childsafe/constraints/__init__.py`
-  Developmental profiles and profile settings.
+  Developmental profiles and constraint settings.
 
 - `src/childsafe/constraints/trie.py`
   Trie-backed lexical masking and `ChildesLogitsProcessor`.
 
+- `src/childsafe/constraints/lexicon_loader.py`
+  Loader for CHILDES-style lexicon frequency files.
+
 ### Engine
 
 - `src/childsafe/engine/state_machine.py`
-  Topic-volatility state machine for discourse digressions.
+  Markovian discourse state transitions.
 
 - `src/childsafe/engine/orchestrator.py`
   `ParametricProbe` and `AuditReport`.
@@ -145,38 +148,49 @@ python3 examples/dimension_usage.py
   `AbstractDimension`, `AbstractEvaluator`, and `DimensionRegistry`.
 
 - `src/childsafe/dimensions/baselines.py`
-  Built-in baseline dimensions and evaluator utilities.
+  Built-in baseline dimensions such as `SycophanticDriftDimension` and
+  `AgeAppropriatenessDimension`.
 
 - `src/childsafe/dimensions/judge.py`
-  `LLMJudge` for trace-level scoring with an evaluator model.
+  `LLMJudge` for dimensions that need model-based evaluation.
 
-## Using Custom Dimensions
+## Custom Dimensions
 
-Any custom dimension can inherit from `AbstractDimension` and be passed
-directly into `audit()`:
+Developers can pass either:
 
-```python
-from childsafe.dimensions import AbstractDimension
+- a registry-backed dimension name such as `"sycophantic_drift"`
+- or a custom `AbstractDimension` instance directly into `probe.audit(...)`
 
+This makes the SDK suitable for both research iteration and production
+integration tests.
 
-class MyDimension(AbstractDimension):
-    @property
-    def name(self) -> str:
-        return "my_dimension"
+## Lexicon Data
 
-    @property
-    def description(self) -> str:
-        return "Scores a custom safety behavior."
+Mock CHILDES-style lexical frequency files can be generated with:
 
-    async def evaluate_trace(self, conversation_history: list) -> dict:
-        return {
-            "score": 0.5,
-            "reasoning": "Replace this with your judge or heuristic logic.",
-        }
+```bash
+python3 scripts/download_childes.py
 ```
 
-You can also register reusable dimensions under a stable string identifier via
-`DimensionRegistry`.
+This produces:
+
+- `data/childes_lexicon/d1_early.json`
+- `data/childes_lexicon/d2_mid.json`
+- `data/childes_lexicon/d3_late.json`
+- `data/childes_lexicon/d4_teen.json`
+
+## Testing and CI
+
+Local quality checks:
+
+```bash
+black --check src/
+mypy src/
+pytest tests/
+```
+
+The repository also includes GitHub Actions CI for formatting, typing, and test
+execution on Python 3.10 and 3.11.
 
 ## Repository Layout
 
@@ -184,22 +198,24 @@ You can also register reusable dimensions under a stable string identifier via
   SDK source code.
 
 - `examples/`
-  Developer-facing usage examples.
+  Runnable usage examples.
 
-- `conversations/`
-  Legacy compatibility runners and provider scripts.
+- `data/childes_lexicon/`
+  Generated lexical frequency lists used for runtime masking.
 
-- `evaluation/`
-  Legacy benchmark scoring code from the original repository.
+- `scripts/`
+  Utility scripts, including CHILDES lexicon generation.
 
-- `corpus/`
-  Existing generated corpora.
+- `tests/`
+  Pytest coverage for trie masking, discourse volatility, and context truncation.
 
-- `scoring_results/`
-  Historical scoring outputs and reports.
+- `conversations/`, `evaluation/`, `corpus/`, `scoring_results/`
+  Legacy benchmark assets retained during the transition from static benchmark
+  to dynamic SDK.
 
-## Current State
+## Status
 
-The SDK and the legacy benchmark code currently coexist in the same repository.
-The SDK is the forward path. The legacy folders remain useful for historical
-reference, corpus inspection, and incremental migration.
+ChildSafe has moved from a static benchmark repository to a dynamic SDK for
+developmental safety evaluation. The current focus is on making the runtime
+probe architecture, extensible dimension system, and test surface strong enough
+for open-source use and ongoing AI alignment research.

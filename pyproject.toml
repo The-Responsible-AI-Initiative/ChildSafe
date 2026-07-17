@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "ChildSafe SDK for runtime developmental safety evaluation of LLM systems."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
   { name = "ChildSafe Contributors" }
 ]
@@ -21,20 +21,38 @@ dependencies = [
   "python-dotenv>=1.0.0",
   "requests>=2.28.0",
   "torch",
-  "transformers>=4.40.0",
+  "transformers>=4.51.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+  "black>=24.0.0",
+  "mypy>=1.10.0",
   "pytest>=8.0.0",
   "ruff>=0.6.0",
 ]
 
+[tool.black]
+target-version = ["py310"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src"]
+follow_imports = "skip"
+ignore_missing_imports = true
+pretty = true
+show_error_codes = true
+warn_unused_ignores = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/childsafe"]
+include = [
+  "/data/childes_lexicon/*.json",
+]
 
 [tool.hatch.build.targets.sdist]
 include = [
+  "/data",
   "/src",
   "/README.md",
   "/pyproject.toml",

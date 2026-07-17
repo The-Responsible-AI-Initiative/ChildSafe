@@ -49,7 +49,9 @@ class DiscourseStateMachine:
     """
 
     tau_i: float
-    semantic_cache: list[str] = field(default_factory=lambda: list(DEFAULT_SEMANTIC_CACHE))
+    semantic_cache: list[str] = field(
+        default_factory=lambda: list(DEFAULT_SEMANTIC_CACHE)
+    )
     linguistic_anchors: tuple[str, ...] = DEFAULT_LINGUISTIC_ANCHORS
     rng: random.Random = field(default_factory=random.Random)
     state: DiscourseState = field(

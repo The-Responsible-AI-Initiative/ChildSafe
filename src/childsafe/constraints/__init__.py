@@ -6,6 +6,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from childsafe.constraints.lexicon_loader import load_lexicon
 from childsafe.constraints.trie import ChildesLogitsProcessor, Trie, TrieNode
 
 
@@ -79,4 +80,5 @@ __all__ = [
     "Trie",
     "TrieNode",
     "get_developmental_profile",
+    "load_lexicon",
 ]

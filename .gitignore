@@ -1,7 +1,38 @@
 childsafe/
 !src/childsafe/
 !src/childsafe/**
-conversations/__pycache__/
-models/__pycache__/
-evaluation/__pycache__/
+
+# Virtual environments and local package manager caches
+.venv/
+.uv-cache/
+
+# Python bytecode and interpreter caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test, type-checking, and lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Coverage outputs
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Build and packaging artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+pip-wheel-metadata/
+
+# Notebook and OS/editor noise
+.ipynb_checkpoints/
+.DS_Store
+
+# Local secrets
 .env

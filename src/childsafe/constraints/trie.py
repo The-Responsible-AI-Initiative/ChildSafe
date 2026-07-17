@@ -177,9 +177,10 @@ class Trie:
 
         node = self.root
         for token_id in prefix:
-            node = node.children.get(token_id)
-            if node is None:
+            next_node = node.children.get(token_id)
+            if next_node is None:
                 return None
+            node = next_node
         return node
 
     def valid_next_tokens(self, prefix: Sequence[int]) -> set[int]:
@@ -227,9 +228,9 @@ class ChildesLogitsProcessor(LogitsProcessor):
         self.tokenizer = tokenizer
         self.trie = Trie.from_words(tokenizer, allowed_words)
         self.special_token_ids = set(tokenizer.all_special_ids)
+        self.eos_token_id = tokenizer.eos_token_id
         self.boundary_token_ids = self._build_boundary_token_ids()
         self.smoothing_token_ids = self._build_smoothing_token_ids(smoothing_words)
-        self.eos_token_id = tokenizer.eos_token_id
 
     def __call__(self, input_ids: Tensor, scores: Tensor) -> Tensor:
         """
@@ -346,12 +347,18 @@ class ChildesLogitsProcessor(LogitsProcessor):
         if token_id in self.special_token_ids:
             return True
 
-        token_text = token if token is not None else self.tokenizer.convert_ids_to_tokens(token_id)
+        token_text = (
+            token
+            if token is not None
+            else self.tokenizer.convert_ids_to_tokens(token_id)
+        )
         cleaned = self._strip_tokenizer_markers(token_text)
         if not cleaned:
             return True
 
-        return all(character in punctuation or character.isspace() for character in cleaned)
+        return all(
+            character in punctuation or character.isspace() for character in cleaned
+        )
 
     @staticmethod
     def _starts_word(token: str) -> bool:
