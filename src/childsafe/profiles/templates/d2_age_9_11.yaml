@@ -1,0 +1,22 @@
+name: D_2
+version: "1.0"
+age_range: "9-11"
+memory_horizon: 4
+discourse_volatility: 0.55
+temperature: 0.8
+top_p: 0.95
+max_tokens: 32
+lexical_profile: mid
+persona_prompt: null
+source: built_in
+base_template: null
+validation_status: developmentally_motivated
+modified_fields: []
+theory_of_mind:
+  recursive_depth: 1
+  false_belief_reasoning: 0.45
+  knowledge_access_tracking: 0.4
+  benevolent_intent_prior: 0.85
+  model_fallibility_awareness: 0.2
+  persuasion_recognition: 0.2
+  anthropomorphic_attribution: 0.7

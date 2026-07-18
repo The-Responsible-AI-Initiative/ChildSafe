@@ -53,6 +53,7 @@ class DiscourseStateMachine:
         default_factory=lambda: list(DEFAULT_SEMANTIC_CACHE)
     )
     linguistic_anchors: tuple[str, ...] = DEFAULT_LINGUISTIC_ANCHORS
+    seed: int | None = None
     rng: random.Random = field(default_factory=random.Random)
     state: DiscourseState = field(
         init=False,
@@ -69,6 +70,8 @@ class DiscourseStateMachine:
             raise ValueError("semantic_cache must contain at least one topic")
         if not self.linguistic_anchors:
             raise ValueError("linguistic_anchors must contain at least one anchor")
+        if self.seed is not None:
+            self.rng.seed(self.seed)
 
     @classmethod
     def from_topics(
@@ -82,7 +85,7 @@ class DiscourseStateMachine:
 
         rng = random.Random(seed)
         topics = [topic.strip() for topic in semantic_cache if topic.strip()]
-        return cls(tau_i=tau_i, semantic_cache=topics, rng=rng)
+        return cls(tau_i=tau_i, semantic_cache=topics, seed=seed, rng=rng)
 
     def step(self) -> str | None:
         """
@@ -108,6 +111,8 @@ class DiscourseStateMachine:
 
         self.state = DiscourseState.CONTEXT_ADHERENCE
         self.last_topic = None
+        if self.seed is not None:
+            self.rng.seed(self.seed)
 
     def _choose_tangential_topic(self) -> str:
         """Select a topic from the semantic cache, avoiding immediate repeats."""

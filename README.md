@@ -16,6 +16,12 @@ constraints over memory, discourse, and vocabulary. That makes the evaluation
 surface more realistic, more reproducible, and easier to extend with custom
 safety dimensions.
 
+The developmental-profile system now supports three usage modes:
+
+- built-in standardized framework defaults
+- built-in templates with selected parameter overrides
+- fully custom user-defined profiles
+
 ## Features
 
 | Capability | ChildSafe SDK | Legacy Static Benchmarks |
@@ -99,6 +105,10 @@ encodes:
 - `topic_volatility`: the probability of discourse-level digression
 - `lexical_band`: the vocabulary band used for runtime masking
 
+These built-in profiles are standardized framework defaults with
+`validation_status="developmentally_motivated"`. Overridden or fully custom
+profiles should not be reported as equivalent to the original built-in profile.
+
 ### 2. Runtime lexical enforcement
 
 Vocabulary is not merely suggested through prompting. It is enforced during
@@ -166,6 +176,83 @@ Developers can pass either:
 
 This makes the SDK suitable for both research iteration and production
 integration tests.
+
+## Profile Modes
+
+Built-in template:
+
+```python
+from childsafe import DevelopmentalAgent, load_profile
+
+profile = load_profile("d1_age_6_8")
+agent = DevelopmentalAgent(
+    profile=profile,
+    model_name_or_path="distilgpt2",
+    seed=42,
+)
+```
+
+Template override:
+
+```python
+from childsafe import DevelopmentalAgent, load_profile, override_profile
+
+profile = override_profile(
+    load_profile("d1_age_6_8"),
+    memory_horizon=3,
+    theory_of_mind={
+        "persuasion_recognition": 0.25,
+        "model_fallibility_awareness": 0.20,
+    },
+)
+agent = DevelopmentalAgent(
+    profile=profile,
+    model_name_or_path="distilgpt2",
+    seed=42,
+)
+```
+
+Fully custom profile:
+
+```python
+from childsafe import DevelopmentalAgent, DevelopmentalProfileConfig, TheoryOfMindProfile
+
+profile = DevelopmentalProfileConfig(
+    name="high_trust_user",
+    version="1.0",
+    age_range=None,
+    memory_horizon=3,
+    discourse_volatility=0.30,
+    temperature=0.8,
+    top_p=0.9,
+    max_tokens=32,
+    lexical_profile=None,
+    persona_prompt=None,
+    theory_of_mind=TheoryOfMindProfile(
+        recursive_depth=1,
+        false_belief_reasoning=0.40,
+        knowledge_access_tracking=0.35,
+        benevolent_intent_prior=0.90,
+        model_fallibility_awareness=0.10,
+        persuasion_recognition=0.15,
+        anthropomorphic_attribution=0.85,
+    ),
+    source="custom",
+    base_template=None,
+    validation_status="user_defined",
+)
+agent = DevelopmentalAgent(
+    profile=profile,
+    model_name_or_path="distilgpt2",
+    seed=42,
+)
+```
+
+See:
+
+- `examples/use_builtin_profile.py`
+- `examples/override_profile.py`
+- `examples/custom_profile.py`
 
 ## Lexicon Data
 

@@ -19,7 +19,9 @@ class DummyTokenizer:
             3: "bird",
             4: ".",
         }
-        self._token_to_id = {token: token_id for token_id, token in self._tokens.items()}
+        self._token_to_id = {
+            token: token_id for token_id, token in self._tokens.items()
+        }
         self.all_special_ids = [0]
         self.eos_token_id = 0
 

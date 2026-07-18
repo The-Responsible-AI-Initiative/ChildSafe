@@ -1,0 +1,22 @@
+name: D_4
+version: "1.0"
+age_range: "15-17"
+memory_horizon: 8
+discourse_volatility: 0.15
+temperature: 0.8
+top_p: 0.95
+max_tokens: 32
+lexical_profile: teen
+persona_prompt: null
+source: built_in
+base_template: null
+validation_status: developmentally_motivated
+modified_fields: []
+theory_of_mind:
+  recursive_depth: 2
+  false_belief_reasoning: 0.75
+  knowledge_access_tracking: 0.7
+  benevolent_intent_prior: 0.65
+  model_fallibility_awareness: 0.5
+  persuasion_recognition: 0.6
+  anthropomorphic_attribution: 0.35

@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
 
-from childsafe.constraints import DevelopmentalProfile
 from childsafe.dimensions import AbstractDimension
 from childsafe.engine.orchestrator import ParametricProbe
 from childsafe.engine.state_machine import DiscourseState
@@ -57,24 +55,65 @@ def context_probe(
 
     probe = object.__new__(ParametricProbe)
     probe.model_name_or_path = "dummy-probe"
-    probe.profile = DevelopmentalProfile.D_2
+    probe.profile = "custom"
     probe.device = "cpu"
     probe.torch_dtype = None
     probe.dimension_registry = None
-    probe.profile_settings = SimpleNamespace(context_horizon=3, lexical_band="mid")
+    probe.profile_settings = type(
+        "ProfileSettings",
+        (),
+        {"context_horizon": 3},
+    )()
+    probe.active_profile = type(
+        "ActiveProfile",
+        (),
+        {
+            "name": "TestProfile",
+            "version": "1.0",
+            "source": "custom",
+            "base_template": None,
+            "template_id": None,
+            "modified_fields": (),
+            "memory_horizon": 3,
+            "lexical_profile": None,
+            "persona_prompt": None,
+            "theory_of_mind": type(
+                "ToM", (), {"model_dump": lambda self, mode="json": {}}
+            )(),
+            "validation_status": "user_defined",
+        },
+    )()
     probe.discourse_state_machine = StaticStateMachine()
+    probe.belief_state = type(
+        "BeliefState",
+        (),
+        {"to_dict": lambda self: {"turn_number": 0}},
+    )()
+    probe.tom_policy = type(
+        "ToMPolicy",
+        (),
+        {
+            "update": lambda self, state, response, world_state=None: state,
+            "render_generation_context": lambda self, belief_state: "belief",
+        },
+    )()
+    probe.target_history = []
+    probe.conversation_history = []
+    probe.seed = None
     probe.seed_prompt = "seed prompt"
 
     history_snapshots: list[list[dict[str, Any]]] = []
     rendered_prompts: list[str] = []
 
-    async def fake_generate_prompt(
+    def fake_generate_prompt(
         self: ParametricProbe,
         history: list[dict[str, Any]],
         digression_anchor: str | None,
     ) -> str:
         history_snapshots.append([dict(item) for item in history])
-        rendered_prompts.append(self._render_generation_context(history, digression_anchor))
+        rendered_prompts.append(
+            self._render_generation_context(history, digression_anchor)
+        )
         return f"probe-turn-{len(history_snapshots)}"
 
     async def fake_call_target(
@@ -107,15 +146,28 @@ def test_context_horizon_truncates_prompt_history_without_mutating_full_trace(
         )
     )
 
-    assert [len(snapshot) for snapshot in history_snapshots] == [0, 1, 2, 3, 3, 3, 3, 3, 3, 3]
+    assert [len(snapshot) for snapshot in history_snapshots] == [
+        0,
+        1,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+    ]
     assert len(report.raw_conversation_trace) == 10
     assert report.raw_conversation_trace[0]["probe_prompt"] == "probe-turn-1"
     assert report.raw_conversation_trace[-1]["probe_prompt"] == "probe-turn-10"
+    assert len(probe.target_history) == 10
 
     for turn_index in range(3, 10):
-        assert history_snapshots[turn_index] == report.raw_conversation_trace[
-            turn_index - 3 : turn_index
-        ]
+        assert (
+            history_snapshots[turn_index]
+            == report.raw_conversation_trace[turn_index - 3 : turn_index]
+        )
 
     assert "probe-turn-1" not in rendered_prompts[4]
     assert "probe-turn-2" in rendered_prompts[4]

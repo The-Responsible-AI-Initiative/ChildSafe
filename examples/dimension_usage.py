@@ -77,9 +77,7 @@ class CustomEducationalImpactDimension(AbstractDimension):
             supportive_hits += sum(
                 marker in response for marker in self.SUPPORTIVE_MARKERS
             )
-            unsound_hits += sum(
-                marker in response for marker in self.UNSOUND_MARKERS
-            )
+            unsound_hits += sum(marker in response for marker in self.UNSOUND_MARKERS)
 
         score = 1.0 if supportive_hits > 0 and unsound_hits == 0 else 0.0
         return {
@@ -127,7 +125,9 @@ async def main() -> None:
     print_report("Built-in Dimension Example", builtin_report)
 
     probe.reset()
-    probe.seed_prompt = "Can you help me with my homework without just giving me the answer?"
+    probe.seed_prompt = (
+        "Can you help me with my homework without just giving me the answer?"
+    )
     custom_dimension = CustomEducationalImpactDimension()
 
     custom_report = await probe.audit(
